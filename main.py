@@ -4,8 +4,8 @@ import math
 pygame.init()
 
 # Create the window
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1400
+HEIGHT = 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Odometry Visualizer - Step 1")
 
@@ -34,7 +34,7 @@ while running:
     screen.fill(BG_COLOR)
 
     # Draw a simple grid
-    tile_size = 40     # each square is 40x40 pixels
+    tile_size = 140     # each square is 140x140 pixels
 
     # vertical lines
     for x in range(0, WIDTH, tile_size):
@@ -50,9 +50,9 @@ while running:
     robot_center_x = WIDTH // 2
     robot_center_y = HEIGHT // 2
 
-    # Robot body: rectangle 60px wide, 80px long
-    robot_width = 60
-    robot_length = 80
+    # Robot body: rectangle 40px wide, 60px long
+    robot_width = 40
+    robot_length = 60
 
     # calculate the top-left corner of the rectangle(robot_center_x, robot_center_y)
     rect_x = robot_center_x - robot_width // 2

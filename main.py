@@ -44,6 +44,30 @@ while running:
     for y in range(0,HEIGHT,tile_size):
         pygame.draw.line(screen, GRID_COLOR, (0,y), (WIDTH,y),1)
 
+    # ---------------------
+    #   TILE NUMBERS
+    # ---------------------
+
+    font_small = pygame.font.SysFont("consolas", 13)   # smaller & monospaced → numbers align better
+
+    # How many tiles fit horizontally / vertically
+    cols = (WIDTH + tile_size - 1) // tile_size
+    rows = (HEIGHT + tile_size - 1) // tile_size
+
+    for row in range(rows):
+        for col in range(cols):
+            # center of this tile
+            cx = col * tile_size + tile_size // 2
+            cy = row * tile_size + tile_size // 2
+            
+            # coordinate text — (x,y) with x = column, y = row
+            label = f"({col},{row})"
+            
+            text_surf = font_small.render(label, True, (140, 140, 150))  # soft gray
+            text_rect = text_surf.get_rect(center=(cx, cy))
+            
+            screen.blit(text_surf, text_rect)
+
     #--------------------
     # Robot
     #--------------------

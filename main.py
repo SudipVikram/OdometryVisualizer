@@ -48,25 +48,60 @@ while running:
     #   TILE NUMBERS
     # ---------------------
 
-    font_small = pygame.font.SysFont("consolas", 13)   # smaller & monospaced → numbers align better
+    # ── Simple tile numbering: 0, 1, 2, 3, … in center ────────────────
+    font_tile = pygame.font.SysFont("consolas", 28, bold=False)   # big font
 
-    # How many tiles fit horizontally / vertically
-    cols = (WIDTH + tile_size - 1) // tile_size
+    # how many tiles fit
+    cols = (WIDTH  + tile_size - 1) // tile_size
     rows = (HEIGHT + tile_size - 1) // tile_size
+
+    tile_counter = 0
 
     for row in range(rows):
         for col in range(cols):
             # center of this tile
             cx = col * tile_size + tile_size // 2
             cy = row * tile_size + tile_size // 2
-            
-            # coordinate text — (x,y) with x = column, y = row
-            label = f"({col},{row})"
-            
-            text_surf = font_small.render(label, True, (140, 140, 150))  # soft gray
-            text_rect = text_surf.get_rect(center=(cx, cy))
-            
-            screen.blit(text_surf, text_rect)
+
+            # number as string
+            number_str = str(tile_counter)
+
+            text = font_tile.render(number_str, True, (220, 220, 255))  # medium gray
+            text_rect = text.get_rect(center=(cx, cy))
+
+            screen.blit(text, text_rect)
+
+            tile_counter += 1
+
+    # ── Axis labels (like a graph / plot) ───────────────────────────────
+
+    # Font for axis numbers
+    font_axis = pygame.font.SysFont("consolas", 14)
+
+    # ── X labels (bottom edge) ────────────────────────────────
+    for col in range(0, cols + 1):  # +1 to include the last one
+        x_pos = col * tile_size
+        label = str(col * tile_size)          # actual pixel value or just tile index?
+        # Option 1: show tile count (0,1,2,3...)
+        # label = str(col)
+        # Option 2: show real pixel distance from left
+        # label = str(col * tile_size)
+
+        text = font_axis.render(label, True, (90, 90, 110))
+        text_rect = text.get_rect(midtop=(x_pos, HEIGHT - 18))  # just above bottom edge
+        screen.blit(text, text_rect)
+
+    # ── Y labels (left edge) ──────────────────────────────────
+    for row in range(0, rows + 1):
+        y_pos = row * tile_size
+        label = str(row * tile_size)          # or str(row) for tile count
+
+        text = font_axis.render(label, True, (90, 90, 110))
+        text_rect = text.get_rect(midright=(18, y_pos))  # just right of left edge
+        screen.blit(text, text_rect)
+
+    # Optional: mark (0,0) more clearly
+    pygame.draw.circle(screen, (220, 80, 80), (0, 0), 6)  # small red dot at top-left origin
 
     #--------------------
     # Robot

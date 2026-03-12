@@ -66,7 +66,7 @@ while running:
             # number as string
             number_str = str(tile_counter)
 
-            text = font_tile.render(number_str, True, (220, 220, 255))  # medium gray
+            text = font_tile.render(number_str, True, (221, 221, 238))  # medium gray
             text_rect = text.get_rect(center=(cx, cy))
 
             screen.blit(text, text_rect)
@@ -79,11 +79,12 @@ while running:
     font_axis = pygame.font.SysFont("consolas", 14)
 
     # ── X labels (bottom edge) ────────────────────────────────
-    for col in range(0, cols + 1):  # +1 to include the last one
-        x_pos = col * tile_size
+    max_col = (WIDTH  // tile_size)
+    for col in range(1, max_col):
+        x_pos = col * tile_size + tile_size // 2
         label = str(col * tile_size)          # actual pixel value or just tile index?
         # Option 1: show tile count (0,1,2,3...)
-        # label = str(col)
+        label = str(col)
         # Option 2: show real pixel distance from left
         # label = str(col * tile_size)
 
@@ -92,16 +93,13 @@ while running:
         screen.blit(text, text_rect)
 
     # ── Y labels (left edge) ──────────────────────────────────
-    for row in range(0, rows + 1):
-        y_pos = row * tile_size
-        label = str(row * tile_size)          # or str(row) for tile count
-
-        text = font_axis.render(label, True, (90, 90, 110))
-        text_rect = text.get_rect(midright=(18, y_pos))  # just right of left edge
-        screen.blit(text, text_rect)
-
-    # Optional: mark (0,0) more clearly
-    pygame.draw.circle(screen, (220, 80, 80), (0, 0), 6)  # small red dot at top-left origin
+    max_row = (HEIGHT // tile_size)
+    for row in range(max_row):
+        screen_x = 10                               # near left
+        screen_y = HEIGHT - (row * tile_size + tile_size // 2)
+        text = font_axis.render(str(row), True, (90,90,110))
+        screen.blit(text, text.get_rect(midright=(screen_x, screen_y)))
+        
 
     #--------------------
     # Robot

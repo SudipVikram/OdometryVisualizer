@@ -31,19 +31,33 @@ while True:
     f_size = 40
     counter = 1
 
-    # Outer loop controls vertical position (starting at y=645 and going up)
-    for j in range(635, 0, -105-f_size):
-        # Inner loop controls horizontal position (150-pixel steps)
+    # outer loop controls vertical position (starting at y=645 and going up)
+    for j in range(635, 0, -145):
+        # inner loop controls horizontal position (150-pixel steps)
         for i in range(150, visualizer.wwidth + 150, 150):
             if counter <= 45:
-                # Draw the current number
+                # draw the current number
                 visualizer.draw_text(text=str(counter),font_size=f_size,color=(237, 237, 237),xpos=(i - 75 - (f_size // 2)),ypos=j)
                 counter += 1
             else:
                 break  # Stop once we reach 45
 
+    
     # loading the robot
     robot.load()
+
+    #============
+    # KEY STROKES
+    #============
+    robot_speed = 5
+    if visualizer.left_pressed:
+        robot.update_position(xpos=robot.xpos-robot_speed,ypos=robot.ypos)
+    if visualizer.right_pressed:
+        robot.update_position(xpos=robot.xpos+robot_speed,ypos=robot.ypos)
+    if visualizer.up_pressed:
+        robot.update_position(xpos=robot.xpos,ypos=robot.ypos-robot_speed)
+    if visualizer.down_pressed:
+        robot.update_position(xpos=robot.xpos,ypos=robot.ypos+robot_speed)
 
     # title text
     visualizer.draw_text(text="Punte Robot Visualizer",font_size=20,color=(40,40,80),xpos=10,ypos=10)

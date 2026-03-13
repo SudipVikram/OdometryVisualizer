@@ -1,5 +1,6 @@
 import pygame
 import math
+from collections import deque
 
 pygame.init()
 
@@ -19,6 +20,24 @@ TEXT_COLOR = (60, 60, 80)
 ROBOT_COLOR = (60, 130, 230)        # nice blue
 ARROW_COLOR = (20, 20, 40)
 
+# Robot in world coordinates (logical units)
+robot_world_x = 0.0
+robot_world_y = 0.0
+
+# heading angle in degrees
+heading_angle = 90.0          # 90° = up (in pygame angles: 0=right, 90=up, 180=left, 270=down)
+
+# robot trail
+trail = deque(maxlen=80)           # keep last 80 positions, then oldest disappears
+trail_color = (80, 140, 220, 140)  # semi-transparent blue
+
+# how many world units to move per frame when key is pressed
+#move_speed = 0.08   # small steps for smooth movement
+move_speed = 0.04     # slower / more precise
+
+# show the coordinates of the robot
+show_coords = True          # you can set to False later to hide
+
 running = True
 
 while running:
@@ -36,6 +55,9 @@ while running:
     # Draw a simple grid
     tile_size = 140     # each square is 140x140 pixels
 
+    max_x = (WIDTH  // tile_size) - 0.5     # center of last column
+    max_y = (HEIGHT // tile_size) - 0.5     # center of top row
+
     # vertical lines
     for x in range(0, WIDTH, tile_size):
         pygame.draw.line(screen, GRID_COLOR, (x,0),(x,HEIGHT),1)
@@ -43,6 +65,17 @@ while running:
     # Horizontal lines
     for y in range(0,HEIGHT,tile_size):
         pygame.draw.line(screen, GRID_COLOR, (0,y), (WIDTH,y),1)
+
+    # keeping the robot with the boundary
+    robot_world_x = max(0.0, min(max_x, robot_world_x))
+    robot_world_y = max(0.0, min(max_y, robot_world_y))
+
+    for i, (wx, wy) in enumerate(trail):
+        px = int(wx * tile_size + tile_size // 2)
+        py = int(HEIGHT - (wy * tile_size + tile_size // 2))
+        alpha = int(60 + 140 * (i / len(trail)))      # fade out older points
+        color = (*trail_color[:3], alpha)
+        pygame.draw.circle(screen, color, (px, py), 1)
 
     # ---------------------
     #   TILE NUMBERS
@@ -104,38 +137,70 @@ while running:
     #--------------------
     # Robot
     #--------------------
-    robot_center_x = WIDTH // 2
-    robot_center_y = HEIGHT // 2
+        # ── Robot position in screen pixels (converted from world coordinates) ──
+    robot_screen_x = int(robot_world_x * tile_size + tile_size // 2)
+    robot_screen_y = int(HEIGHT - (robot_world_y * tile_size + tile_size // 2))
 
-    # Robot body: rectangle 40px wide, 60px long
-    robot_width = 40
-    robot_length = 60
+    # Robot body size (in pixels)
+    robot_width_px  = 50
+    robot_length_px = 50
 
-    # calculate the top-left corner of the rectangle(robot_center_x, robot_center_y)
-    rect_x = robot_center_x - robot_width // 2
-    rect_y = robot_center_y - robot_length // 2
+    # Rectangle top-left corner
+    rect_x = robot_screen_x - robot_width_px // 2
+    rect_y = robot_screen_y - robot_length_px // 2
 
-    # draw the robot body
     pygame.draw.rect(
         screen,
         ROBOT_COLOR,
-        (rect_x, rect_y, robot_width, robot_length),
-        border_radius=8     # for rounded corners
+        (rect_x, rect_y, robot_width_px, robot_length_px),
+        border_radius=8
     )
 
-    # direction arrow
-    arrow_length = 50
-    # straight up from the center of the robot
-    arrow_start = (robot_center_x, robot_center_y)
-    arrow_end = (robot_center_x, robot_center_y - arrow_length)
+    # ── Direction arrow – rotated
+    arrow_length_px = 50
+
+    # Vector pointing in heading direction
+    dx = math.cos(math.radians(heading_angle)) * arrow_length_px
+    dy = -math.sin(math.radians(heading_angle)) * arrow_length_px   # negative because y grows up
+
+    arrow_start = (robot_screen_x, robot_screen_y)
+    arrow_end   = (robot_screen_x + dx, robot_screen_y + dy)
 
     pygame.draw.line(screen, ARROW_COLOR, arrow_start, arrow_end, 5)
-    pygame.draw.circle(screen, ARROW_COLOR, arrow_end, 8)   # arrowhead dot
+    pygame.draw.circle(screen, ARROW_COLOR, (int(arrow_end[0]), int(arrow_end[1])), 8)
+
+    if show_coords:
+        font_coords = pygame.font.SysFont("consolas", 18)
+        coord_text = f"x:{robot_world_x:5.1f}  y:{robot_world_y:5.1f}"
+        text_surf = font_coords.render(coord_text, True, (40, 40, 80))
+        text_rect = text_surf.get_rect(midbottom=(robot_screen_x, robot_screen_y - 65))
+        # small background rectangle so text is readable on grid
+        bg_rect = text_rect.inflate(12, 8)
+        pygame.draw.rect(screen, (255,255,255,180), bg_rect, border_radius=4)
+        screen.blit(text_surf, text_rect)                                                                               
 
     # Title
     font = pygame.font.SysFont("arial", 22)
     text = font.render("Punte Robot Visualizer",True,TEXT_COLOR)
     screen.blit(text,(10,10))
+
+    # ── Keyboard input ───────────────────────────────────────────────
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_LEFT]:
+        robot_world_x -= move_speed
+        heading_angle = 180
+    if keys[pygame.K_RIGHT]:
+        robot_world_x += move_speed
+        heading_angle = 0
+    if keys[pygame.K_UP]:
+        robot_world_y += move_speed
+        heading_angle = 90
+    if keys[pygame.K_DOWN]:
+        robot_world_y -= move_speed
+        heading_angle = 270
+
+    trail.append((robot_world_x, robot_world_y))
 
     # Showing what we drew
     pygame.display.flip()

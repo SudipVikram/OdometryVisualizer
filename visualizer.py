@@ -25,8 +25,28 @@ while True:
     for j in range(0, visualizer.wheight, 150):
         visualizer.draw_line(start=(0,j),end=(visualizer.wwidth,j),color=(179,204,204),width=1)
 
+    #===========
+    # NUMBERING
+    #===========
+    f_size = 40
+    counter = 1
+
+    # Outer loop controls vertical position (starting at y=645 and going up)
+    for j in range(635, 0, -105-f_size):
+        # Inner loop controls horizontal position (150-pixel steps)
+        for i in range(150, visualizer.wwidth + 150, 150):
+            if counter <= 45:
+                # Draw the current number
+                visualizer.draw_text(text=str(counter),font_size=f_size,color=(237, 237, 237),xpos=(i - 75 - (f_size // 2)),ypos=j)
+                counter += 1
+            else:
+                break  # Stop once we reach 45
+
     # loading the robot
     robot.load()
+
+    # title text
+    visualizer.draw_text(text="Punte Robot Visualizer",font_size=20,color=(40,40,80),xpos=10,ypos=10)
 
     # setting fps
     visualizer.set_fps(60)

@@ -1,7 +1,11 @@
 from sajilopygame import *
+from sajilocv import *
 
 # instantiating the class
 visualizer = sajilopygame(wwidth=1350, wheight=750)
+serialData = sajilocv()
+odometry_data = serialData.ucontroller(serialData,port='COM8',baudrate=115200,timeout=1)
+
 
 # title of the window
 visualizer.window_title("Odometry Visualizer")
@@ -45,6 +49,23 @@ while True:
     
     # loading the robot
     robot.load()
+
+    #===========
+    # ODOMETRY DATA
+    #===========
+    data_from_serial = odometry_data.receive_serial_data()
+    if data_from_serial is not None:
+        print(data_from_serial)
+        try:
+            data = data_from_serial.decode('utf-8').strip()
+            if data.startswith("L:") and " R:" in data:
+                    parts = data.split(" R:")
+                    left_enc = int(parts[0].replace("L:", ""))
+                    right_enc = int(parts[1])
+                    # print the values to the console
+                    print(f"Left Encoder: {left_enc}, Right Encoder: {right_enc}")
+        except:
+            pass
 
     #============
     # KEY STROKES

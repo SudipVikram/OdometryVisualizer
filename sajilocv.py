@@ -845,6 +845,18 @@ class sajilocv:
             else:
                 self.conn.write(b'0')
         ''' function to send serial data to arduino ends here '''
+
+        ''' function to receive serial data from arduino starts here '''
+        def receive_serial_data(self):
+            if self.conn.in_waiting > 0:
+                try:
+                    data = self.conn.readline().decode('utf-8').strip()
+                    return data
+                except Exception as e:
+                    print(f"Error reading serial data: {e}")
+                    return None
+            return None
+        ''' function to receive serial data from arduino ends here '''
     # Creating a class for tools
     class tools:
         def __init__(self, outer_instance,other_instance=None):

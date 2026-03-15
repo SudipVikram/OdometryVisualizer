@@ -53,19 +53,23 @@ while True:
     #===========
     # ODOMETRY DATA
     #===========
+    
+    visualizer.draw_rect(color=(255,0,255),org=(600,10),width=150,height=100,border_thickness=0,border_radius=10)
+
     data_from_serial = odometry_data.receive_serial_data()
     if data_from_serial is not None:
-        print(data_from_serial)
         try:
-            data = data_from_serial.decode('utf-8').strip()
-            if data.startswith("L:") and " R:" in data:
-                    parts = data.split(" R:")
-                    left_enc = int(parts[0].replace("L:", ""))
-                    right_enc = int(parts[1])
-                    # print the values to the console
-                    print(f"Left Encoder: {left_enc}, Right Encoder: {right_enc}")
+            if data_from_serial.startswith("L:") and " R:" in data_from_serial:
+                parts = data_from_serial.split(" R:")
+                left_enc = int(parts[0].replace("L:", ""))
+                right_enc = int(parts[1])
+                # print the values to the console
+                #print(f"Left Encoder: {left_enc}, Right Encoder: {right_enc}")
         except:
             pass
+    
+    visualizer.draw_text(text=f"Left: {left_enc}",font_size=20,color=(255,255,255),xpos=610,ypos=30)
+    visualizer.draw_text(text=f"Right: {right_enc}",font_size=20,color=(255,255,255),xpos=610,ypos=70)
 
     #============
     # KEY STROKES

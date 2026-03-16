@@ -846,6 +846,20 @@ class sajilocv:
                 self.conn.write(b'0')
         ''' function to send serial data to arduino ends here '''
 
+        ''' function to send serial data to arduino without any obstruction starts here '''
+        def send_serial_data_unobstructed(self, data=None):
+            if data is None:
+                return  # do nothing — better than sending garbage
+
+            try:
+                # Optional: add small timeout if your serial lib supports it
+                self.conn.write(data)
+                self.conn.flush()  # try to push data out immediately
+            except Exception as e:
+                print("Serial write error:", e)
+                # Optional: try to reconnect or flag error
+        ''' function to send serial data to arduino without any obstruction ends here '''
+
         ''' function to receive serial data from arduino starts here '''
         def receive_serial_data(self):
             if self.conn.in_waiting > 0:

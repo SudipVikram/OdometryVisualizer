@@ -1,11 +1,12 @@
 from sajilopygame import *
 from sajilocv import *
+import threading
+import queue
 
 # instantiating the class
 visualizer = sajilopygame(wwidth=1350, wheight=750)
 serialData = sajilocv()
 odometry_data = serialData.ucontroller(serialData,port='COM8',baudrate=115200,timeout=1)
-
 
 # title of the window
 visualizer.window_title("Odometry Visualizer")
@@ -53,8 +54,8 @@ while True:
     #===========
     # ODOMETRY DATA
     #===========
-    
-    visualizer.draw_rect(color=(255,0,255),org=(600,10),width=150,height=100,border_thickness=0,border_radius=10)
+    # placeholder for odometry data
+    visualizer.draw_rect(color=(74,243,255),org=(1150,10),width=150,height=100,border_thickness=0,border_radius=10)
 
     data_from_serial = odometry_data.receive_serial_data()
     if data_from_serial is not None:
@@ -67,22 +68,30 @@ while True:
                 #print(f"Left Encoder: {left_enc}, Right Encoder: {right_enc}")
         except:
             pass
+
     
-    visualizer.draw_text(text=f"Left: {left_enc}",font_size=20,color=(255,255,255),xpos=610,ypos=30)
-    visualizer.draw_text(text=f"Right: {right_enc}",font_size=20,color=(255,255,255),xpos=610,ypos=70)
+    visualizer.draw_text(text="Encoder Data",font_size=16,color=(0,0,0),xpos=1155,ypos=15)
+    visualizer.draw_text(text=f"Left: {left_enc}",font_size=16,color=(84,84,84),xpos=1155,ypos=35)
+    visualizer.draw_text(text=f"Right: {right_enc}",font_size=16,color=(84,84,84),xpos=1155,ypos=55)
 
     #============
     # KEY STROKES
     #============
+    '''current_command = "STOP"    # sending data to punte for movement
+
     robot_speed = 5
     if visualizer.left_pressed:
+        current_command = "LEFT"
         robot.update_position(xpos=robot.xpos-robot_speed,ypos=robot.ypos)
     if visualizer.right_pressed:
+        current_command = "RIGHT"
         robot.update_position(xpos=robot.xpos+robot_speed,ypos=robot.ypos)
     if visualizer.up_pressed:
+        current_command = "FORWARD"
         robot.update_position(xpos=robot.xpos,ypos=robot.ypos-robot_speed)
     if visualizer.down_pressed:
-        robot.update_position(xpos=robot.xpos,ypos=robot.ypos+robot_speed)
+        current_command = "BACKWARD"
+        robot.update_position(xpos=robot.xpos,ypos=robot.ypos+robot_speed)'''
 
     # title text
     visualizer.draw_text(text="Punte Robot Visualizer",font_size=20,color=(40,40,80),xpos=10,ypos=10)

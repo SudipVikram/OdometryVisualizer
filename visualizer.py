@@ -2,6 +2,7 @@ from sajilopygame import *
 from sajilocv import *
 import threading
 import queue
+import os
 
 # instantiating the class
 visualizer = sajilopygame(wwidth=1350, wheight=750)
@@ -13,8 +14,24 @@ visualizer.window_title("Odometry Visualizer")
 
 # robot character
 robot = visualizer.character(parent=visualizer,type="shape",character_shape="rectangle",
-                             color=(0,0,255),org=(0,visualizer.wheight-40),width=40,height=40,
+                             color=(232,28,79),org=(0,visualizer.wheight-40),width=40,height=40,
                              border_thickness=0, border_radius=5)
+
+#===========
+# ARROWS SETUP
+#===========
+# folder path for arrow images
+arrow_folder = "assets/arrows"
+
+# dictionary to hold arrow characters
+arrows = {}
+
+for direction in ["up", "down", "left", "right"]:
+    path = os.path.join(arrow_folder, f"{direction}.png")
+    if os.path.exists(path):
+        arrows[direction] = pygame.image.load(path).convert_alpha()
+    else:
+        print(f"Warning: missing {direction}.png")
 
 #===========
 # ODOMETRY SETUP
@@ -127,6 +144,23 @@ while True:
     robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30 + 85)
 
     robot.load()
+
+    # draw heading arrow
+    heading_norm = heading % 360
+    if 45 <= heading_norm < 135:
+        direction = "up"
+    elif 135 <= heading_norm < 225:
+        direction = "left"
+    elif 225 <= heading_norm < 315:
+        direction = "down"
+    else:
+        direction = "right"   # includes 315–360 and 0–45
+
+    # Draw the arrow centered on the robot
+    if direction in arrows:
+        img = arrows[direction]
+        rect = img.get_rect(center=(screen_x, screen_y + 75))
+        visualizer.screen.blit(img, rect)
 
 
     #============

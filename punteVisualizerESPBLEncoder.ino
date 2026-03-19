@@ -18,6 +18,9 @@ BluetoothSerial SerialBT;
 #define MOTOR_RIGHT_IA   27
 #define MOTOR_RIGHT_IB   14
 
+// speed of Punte
+const int MOTOR_SPEED = 120;
+
 // ─── Left motor variables ────────────────────────────────────────
 volatile int lastEncodedLeft = 0;
 volatile long encoderLeft    = 0;
@@ -80,30 +83,30 @@ void loop() {
         cmd.trim();
 
         if (cmd == "FORWARD"){ /* both motors forward */ 
-          digitalWrite(MOTOR_LEFT_IA, HIGH);
-          digitalWrite(MOTOR_LEFT_IB, LOW);
-          digitalWrite(MOTOR_RIGHT_IA, HIGH);
-          digitalWrite(MOTOR_RIGHT_IB, LOW);
+          analogWrite(MOTOR_LEFT_IA, MOTOR_SPEED);
+          analogWrite(MOTOR_LEFT_IB, 0);
+          analogWrite(MOTOR_RIGHT_IA, MOTOR_SPEED);
+          analogWrite(MOTOR_RIGHT_IB, 0);
         } else if (cmd == "BACKWARD"){ /* both backward */ 
-          digitalWrite(MOTOR_LEFT_IA, LOW);
-          digitalWrite(MOTOR_LEFT_IB, HIGH);
-          digitalWrite(MOTOR_RIGHT_IA, LOW);
-          digitalWrite(MOTOR_RIGHT_IB, HIGH);
+          analogWrite(MOTOR_LEFT_IA, 0);
+          analogWrite(MOTOR_LEFT_IB, MOTOR_SPEED);
+          analogWrite(MOTOR_RIGHT_IA, 0);
+          analogWrite(MOTOR_RIGHT_IB, MOTOR_SPEED);
         } else if (cmd == "LEFT"){ /* move left */ 
-          digitalWrite(MOTOR_LEFT_IA, LOW);
-          digitalWrite(MOTOR_LEFT_IB, HIGH);
-          digitalWrite(MOTOR_RIGHT_IA, HIGH);
-          digitalWrite(MOTOR_RIGHT_IB, LOW);
+          analogWrite(MOTOR_LEFT_IA, 0);
+          analogWrite(MOTOR_LEFT_IB, MOTOR_SPEED);
+          analogWrite(MOTOR_RIGHT_IA, MOTOR_SPEED);
+          analogWrite(MOTOR_RIGHT_IB, 0);
         } else if (cmd == "RIGHT"){ /* move right */
-          digitalWrite(MOTOR_LEFT_IA, HIGH);
-          digitalWrite(MOTOR_LEFT_IB, LOW);
-          digitalWrite(MOTOR_RIGHT_IA, LOW);
-          digitalWrite(MOTOR_RIGHT_IB, HIGH); 
+          analogWrite(MOTOR_LEFT_IA, MOTOR_SPEED);
+          analogWrite(MOTOR_LEFT_IB, 0);
+          analogWrite(MOTOR_RIGHT_IA, 0);
+          analogWrite(MOTOR_RIGHT_IB, MOTOR_SPEED); 
         } else if (cmd == "STOP"){ /* STOP */
-          digitalWrite(MOTOR_LEFT_IA, LOW);
-          digitalWrite(MOTOR_LEFT_IB, LOW);
-          digitalWrite(MOTOR_RIGHT_IA, LOW);
-          digitalWrite(MOTOR_RIGHT_IB, LOW);
+          analogWrite(MOTOR_LEFT_IA, 0);
+          analogWrite(MOTOR_LEFT_IB, 0);
+          analogWrite(MOTOR_RIGHT_IA, 0);
+          analogWrite(MOTOR_RIGHT_IB, 0);
         }
     }
 }

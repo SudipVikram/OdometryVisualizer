@@ -87,21 +87,59 @@ while True:
     visualizer.draw_rect(color=(74,243,255),org=(1150,10),width=150,height=100,border_thickness=0,border_radius=10)
 
     data_from_serial = odometry_data.receive_serial_data()
+
     if data_from_serial is not None:
         try:
-            if data_from_serial.startswith("L:") and " R:" in data_from_serial:
-                parts = data_from_serial.split(" R:")
-                left_enc = int(parts[0].replace("L:", ""))
-                right_enc = int(parts[1])
-                # print the values to the console
-                #print(f"Left Encoder: {left_enc}, Right Encoder: {right_enc}")
-        except:
+            line = data_from_serial.strip()  # remove \n and extra spaces
+
+            if line.startswith("L:") and ", R:" in line and ", TOF:" in line:
+                # Split on the two known separators
+                parts = line.split(", R:")
+                if len(parts) != 2:
+                    raise ValueError("Missing R: part")
+
+                left_part = parts[0].strip()                    # "L:1234"
+                rest = parts[1].strip()                         # "5678, TOF:342"
+
+                left_enc = int(left_part.replace("L:", ""))
+
+                # Now split the rest on ", TOF:"
+                right_tof = rest.split(", TOF:")
+                if len(right_tof) != 2:
+                    raise ValueError("Missing TOF part")
+
+                right_enc = int(right_tof[0].strip())           # "5678"
+                tof_str   = right_tof[1].strip()                # "342" or "-1"
+
+                # Convert TOF safely
+                try:
+                    tof_distance = int(tof_str)
+                except ValueError:
+                    tof_distance = -999   # error/invalid flag
+
+                # Now you have:
+                # left_enc, right_enc, tof_distance
+
+                # Optional: debug print
+                # print(f"L:{left_enc}  R:{right_enc}  TOF:{tof_distance}")
+
+        except Exception:
+            # silently ignore bad packets during runtime
+            # (uncomment next line only when debugging)
+            # print("Bad packet:", data_from_serial)
             pass
 
     
     visualizer.draw_text(text="Encoder Data",font_size=16,color=(0,0,0),xpos=1155,ypos=15)
     visualizer.draw_text(text=f"Left: {left_enc}",font_size=16,color=(84,84,84),xpos=1155,ypos=35)
     visualizer.draw_text(text=f"Right: {right_enc}",font_size=16,color=(84,84,84),xpos=1155,ypos=55)
+
+    #===========
+    # TOF DATA
+    #===========
+    visualizer.draw_rect(color=(255, 179, 179),org=(1150,120),width=150,height=50,border_thickness=0,border_radius=10)
+    visualizer.draw_text(text="TOF Data",font_size=16,color=(0,0,0),xpos=1155,ypos=125)
+    visualizer.draw_text(text=f"Distance: {tof_distance}",font_size=16,color=(84,84,84),xpos=1155,ypos=145)
 
     #===========
     # ODOMETRY CALCULATIONS
@@ -161,6 +199,12 @@ while True:
         img = arrows[direction]
         rect = img.get_rect(center=(screen_x, screen_y + 75))
         visualizer.screen.blit(img, rect)
+
+
+    #============
+    # PERIMETER
+    #============
+    
 
 
     #============

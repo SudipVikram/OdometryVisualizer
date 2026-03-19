@@ -25,8 +25,8 @@ world_y = 0.0   # meters (forward = positive)
 heading = 90.0  # degrees (90 = facing up)
 
 # wheel constants
-TICKS_PER_METER = 1200
-WHEEL_BASE = 0.15  # meters (distance between left and right wheels)
+TICKS_PER_METER = 9191.25
+WHEEL_BASE = 0.119  # meters (distance between left and right wheels)
 
 # previous encoder values
 prev_left = 0
@@ -89,6 +89,9 @@ while True:
     #===========
     # ODOMETRY CALCULATIONS
     #===========
+    # wheel diameter = 34 milimeters = 0.034 meters
+    # wheel circumference = pi * diameter = 0.034 * 3.14159 = 0.1068 meters
+    # wheel to wheel distance = 119 milimeters = 0.119 meters
     # how many ticks since last update
     delta_left = left_enc - prev_left
     delta_right = right_enc - prev_right
@@ -121,7 +124,7 @@ while True:
     screen_y = 375 - int(world_y * scale)   # Y flipped because screen Y grows down
 
     # Update robot character position
-    robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30)
+    robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30 + 85)
 
     robot.load()
 

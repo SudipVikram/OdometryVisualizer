@@ -167,7 +167,9 @@ while True:
     delta_theta = (dist_right - dist_left) / WHEEL_BASE
 
     # update heading (convert to degrees)
-    heading += delta_theta * (180.0 / 3.14159)
+    heading += delta_theta * (180.0 / math.pi)
+    heading = heading % 360     # keeping the heading between 0 and 360 degrees
+    print(f"Heading: {heading:.1f}°   world_x: {world_x:.3f}  world_y: {world_y:.3f}")
 
     # update world position
     world_x += distance * math.cos(math.radians(heading))

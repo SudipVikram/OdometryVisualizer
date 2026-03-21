@@ -52,7 +52,7 @@ prev_right = 0
 #===========
 # MAP SETTINGS
 #===========
-obstacle_points = []  # list to store detected obstacle positions
+obstacle_points = []  # list of (world_x, world_y) in meters
 
 while True:
     visualizer.background_color("white")
@@ -209,7 +209,13 @@ while True:
     #============
     # MAPPING
     #============
-    if obstacle_points:
+    # Draw all obstacle points on the screen from world coordinates
+    for wx, wy in obstacle_points:
+        screen_obx = 675 + int(wx * scale)
+        screen_oby = 375 - int(wy * scale)  # Y flipped
+
+        visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)
+    '''if obstacle_points:
         # drawing the obstacle points
         for point_x, point_y in obstacle_points:
             visualizer.draw_rect(color=(255,0,0),org=(point_x-5,point_y-5),width=2,height=2,border_thickness=0,border_radius=0)
@@ -226,10 +232,27 @@ while True:
         obstacle_y = screen_y - int(obstacle_in_pixels * math.sin(math.radians(heading)))
 
         obstacle_points.append((obstacle_x, obstacle_y))  # store for future use
+    '''
+    if 0 < tof_distance < 200:  # closer than 20cm
+        tof_in_meters = tof_distance / 1000
 
-        # drawing the newest obstacle point
-        visualizer.draw_rect(color=(255,255,0),org=(obstacle_x-5,obstacle_y-5),width=10,height=10,border_thickness=0,border_radius=5)
+        # calculate obstacle position in pixels
+        obs_world_x = world_x + tof_in_meters * math.cos(math.radians(heading))
+        obs_world_y = world_y + tof_in_meters * math.sin(math.radians(heading))
 
+        # storing in world coordinates
+        obstacle_points.append((obs_world_x, obs_world_y))
+
+        # prevent memory explosion
+        if len(obstacle_points) > 800:
+            obstacle_points.pop(0)
+
+    # drawing the newest obstacle point
+    if obstacle_points:
+        last_wx, last_wy = obstacle_points[-1]
+        last_screen_x = 675 + int(last_wx * scale)
+        last_screen_y = 375 - int(last_wy * scale)
+        visualizer.draw_rect(color=(255,255,0), org=(last_screen_x-6, last_screen_y-6), width=12, height=12, border_radius=6)
 
     #============
     # KEY STROKES

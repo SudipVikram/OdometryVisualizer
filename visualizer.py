@@ -233,18 +233,30 @@ while True:
 
         obstacle_points.append((obstacle_x, obstacle_y))  # store for future use
     '''
-    if 0 < tof_distance < 200:  # closer than 20cm
-        tof_in_meters = tof_distance / 1000
+    if 50 < tof_distance < 350:  # ignoring very close noise and far readings
+        tof_in_meters = tof_distance / 1000.0
 
         # calculate obstacle position in pixels
         obs_world_x = world_x + tof_in_meters * math.cos(math.radians(heading))
         obs_world_y = world_y + tof_in_meters * math.sin(math.radians(heading))
 
         # storing in world coordinates
-        obstacle_points.append((obs_world_x, obs_world_y))
+        # checking for unique points to store them in the varibale
+        # minimum distance (in meters) to consider a point "unique"
+        MIN_DIST_M = 0.03 # 3cm
+        is_unique = True
+
+        if obstacle_points:
+            for px, py in obstacle_points:
+                if math.hypot(obs_world_x - px, obs_world_y - py) < MIN_DIST_M:
+                    is_unique = False
+                    break
+
+        if is_unique:
+            obstacle_points.append((obs_world_x, obs_world_y))
 
         # prevent memory explosion
-        if len(obstacle_points) > 800:
+        if len(obstacle_points) > 2000:
             obstacle_points.pop(0)
 
     # drawing the newest obstacle point

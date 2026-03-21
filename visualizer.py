@@ -49,6 +49,11 @@ WHEEL_BASE = 0.119  # meters (distance between left and right wheels)
 prev_left = 0
 prev_right = 0
 
+#===========
+# MAP SETTINGS
+#===========
+obstacle_points = []  # list to store detected obstacle positions
+
 while True:
     visualizer.background_color("white")
 
@@ -202,9 +207,28 @@ while True:
 
 
     #============
-    # PERIMETER
+    # MAPPING
     #============
-    
+    if obstacle_points:
+        # drawing the obstacle points
+        for point_x, point_y in obstacle_points:
+            visualizer.draw_rect(color=(255,0,0),org=(point_x-5,point_y-5),width=2,height=2,border_thickness=0,border_radius=0)
+
+    if tof_distance > 0 and tof_distance < 200:
+        # according to our calculations, the pixel to meter ratio is 150px per meter
+        # tof_distance is in millimeters, so converting to meters we get
+        tof_in_meters = tof_distance / 1000
+        # distance the obstacle is from the robot in pixels
+        obstacle_in_pixels = int(tof_in_meters * scale)
+        # draw a point at the detected obstacle location
+        # we have to consider the heading of the robot to draw the point in the correct direction
+        obstacle_x = screen_x + int(obstacle_in_pixels * math.cos(math.radians(heading)))
+        obstacle_y = screen_y - int(obstacle_in_pixels * math.sin(math.radians(heading)))
+
+        obstacle_points.append((obstacle_x, obstacle_y))  # store for future use
+
+        # drawing the newest obstacle point
+        visualizer.draw_rect(color=(255,255,0),org=(obstacle_x-5,obstacle_y-5),width=10,height=10,border_thickness=0,border_radius=5)
 
 
     #============

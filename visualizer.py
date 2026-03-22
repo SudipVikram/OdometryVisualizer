@@ -28,10 +28,19 @@ arrow_folder = "assets/arrows"
 # dictionary to hold arrow characters
 arrows = {}
 
+# resizing the arrows
+target_width = 16
+target_height = 16
+
 for direction in ["up", "down", "left", "right"]:
     path = os.path.join(arrow_folder, f"{direction}.png")
     if os.path.exists(path):
-        arrows[direction] = pygame.image.load(path).convert_alpha()
+        original = pygame.image.load(path).convert_alpha()
+
+        # resizing
+        resized = pygame.transform.smoothscale(original, (target_width, target_height))
+
+        arrows[direction] = resized
     else:
         print(f"Warning: missing {direction}.png")
 
@@ -208,7 +217,7 @@ while True:
     # Draw the arrow centered on the robot
     if direction in arrows:
         img = arrows[direction]
-        rect = img.get_rect(center=(screen_x, screen_y - 10))
+        rect = img.get_rect(center=(screen_x, screen_y))
         visualizer.screen.blit(img, rect)
 
 

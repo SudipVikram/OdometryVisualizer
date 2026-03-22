@@ -13,8 +13,10 @@ odometry_data = serialData.ucontroller(serialData,port='COM8',baudrate=115200,ti
 visualizer.window_title("Odometry Visualizer")
 
 # robot character
+# actual width of the robot{l: 0.125m, b: 0.11m}
+# since 1m = 150px, in visualizer l = 0.125 * 150 = 18.75px ; b = 0.11 * 150 = 16.5px
 robot = visualizer.character(parent=visualizer,type="shape",character_shape="rectangle",
-                             color=(232,28,79),org=(0,visualizer.wheight-40),width=40,height=40,
+                             color=(232,28,79),org=(0,visualizer.wheight),width=18.75,height=16.5,
                              border_thickness=0, border_radius=5)
 
 #===========
@@ -53,6 +55,9 @@ prev_right = 0
 # MAP SETTINGS
 #===========
 obstacle_points = []  # list of (world_x, world_y) in meters
+
+# TOF SENSOR OFFSET (tune these values)
+sensor_offset_forward = 0.055   # meters: how far TOF is in front of robot center
 
 while True:
     visualizer.background_color("white")
@@ -169,8 +174,7 @@ while True:
     # update heading (convert to degrees)
     heading += delta_theta * (180.0 / math.pi)
     heading = heading % 360     # keeping the heading between 0 and 360 degrees
-    print(f"Heading: {heading:.1f}°   world_x: {world_x:.3f}  world_y: {world_y:.3f}")
-
+    
     # update world position
     world_x += distance * math.cos(math.radians(heading))
     world_y += distance * math.sin(math.radians(heading))
@@ -186,7 +190,7 @@ while True:
     screen_y = 375 - int(world_y * scale)   # Y flipped because screen Y grows down
 
     # Update robot character position
-    robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30 + 85)
+    robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30)
 
     robot.load()
 
@@ -204,7 +208,7 @@ while True:
     # Draw the arrow centered on the robot
     if direction in arrows:
         img = arrows[direction]
-        rect = img.get_rect(center=(screen_x, screen_y + 75))
+        rect = img.get_rect(center=(screen_x, screen_y - 10))
         visualizer.screen.blit(img, rect)
 
 
@@ -217,30 +221,17 @@ while True:
         screen_oby = 375 - int(wy * scale)  # Y flipped
 
         visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)
-    '''if obstacle_points:
-        # drawing the obstacle points
-        for point_x, point_y in obstacle_points:
-            visualizer.draw_rect(color=(255,0,0),org=(point_x-5,point_y-5),width=2,height=2,border_thickness=0,border_radius=0)
 
-    if tof_distance > 0 and tof_distance < 200:
-        # according to our calculations, the pixel to meter ratio is 150px per meter
-        # tof_distance is in millimeters, so converting to meters we get
-        tof_in_meters = tof_distance / 1000
-        # distance the obstacle is from the robot in pixels
-        obstacle_in_pixels = int(tof_in_meters * scale)
-        # draw a point at the detected obstacle location
-        # we have to consider the heading of the robot to draw the point in the correct direction
-        obstacle_x = screen_x + int(obstacle_in_pixels * math.cos(math.radians(heading)))
-        obstacle_y = screen_y - int(obstacle_in_pixels * math.sin(math.radians(heading)))
-
-        obstacle_points.append((obstacle_x, obstacle_y))  # store for future use
-    '''
     if 50 < tof_distance < 350:  # ignoring very close noise and far readings
-        tof_in_meters = tof_distance / 1000.0
+        d_m = tof_distance / 1000.0
+
+        # calculating the actual position of the TOF sensor in world space
+        sensor_x = world_x + sensor_offset_forward * math.cos(math.radians(heading))
+        sensor_y = world_y + sensor_offset_forward * math.sin(math.radians(heading))
 
         # calculate obstacle position in pixels
-        obs_world_x = world_x + tof_in_meters * math.cos(math.radians(heading))
-        obs_world_y = world_y + tof_in_meters * math.sin(math.radians(heading))
+        obs_world_x = sensor_x + d_m * math.cos(math.radians(heading))
+        obs_world_y = sensor_y + d_m * math.sin(math.radians(heading))
 
         # storing in world coordinates
         # checking for unique points to store them in the varibale

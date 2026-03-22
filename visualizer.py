@@ -15,8 +15,10 @@ visualizer.window_title("Odometry Visualizer")
 # robot character
 # actual width of the robot{l: 0.125m, b: 0.11m}
 # since 1m = 150px, in visualizer l = 0.125 * 150 = 18.75px ; b = 0.11 * 150 = 16.5px
+robot_world_width = 18.75
+robot_world_height = 16.5
 robot = visualizer.character(parent=visualizer,type="shape",character_shape="rectangle",
-                             color=(232,28,79),org=(0,visualizer.wheight),width=18.75,height=16.5,
+                             color=(232,28,79),org=(0,visualizer.wheight),width=robot_world_width,height=robot_world_height,
                              border_thickness=0, border_radius=5)
 
 #===========
@@ -199,7 +201,7 @@ while True:
     screen_y = 375 - int(world_y * scale)   # Y flipped because screen Y grows down
 
     # Update robot character position
-    robot.update_position(xpos=screen_x - 20, ypos=screen_y - 30)
+    robot.update_position(xpos=screen_x - (robot_world_width//2), ypos=screen_y - (robot_world_height//2))
 
     robot.load()
 

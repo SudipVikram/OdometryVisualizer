@@ -3,9 +3,13 @@
 * code by Beyond Apogee, Nepal
 * Author: Sudip Vikram Adhikari
 */
-
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <wire.h>
 #include <BluetoothSerial.h>
+
 BluetoothSerial SerialBT;
+Adafruit_MPU6050 mpu;
 
 #include <Wire.h>
 #include <VL53L0X.h>
@@ -72,6 +76,17 @@ void setup() {
 
   SerialBT.begin("Punte Robot");   // Bluetooth name
 
+  // initialize MPU6050 on your pins
+  Wire.begin(4, 15);
+  if(!mpu.begin()) {
+    Serial.println("MPU6050 not found!");
+    while(1);
+  }
+
+  // gyro settings
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
   pinMode(ENCODER_LEFT_A,  INPUT_PULLUP);
   pinMode(ENCODER_LEFT_B,  INPUT_PULLUP);
   pinMode(ENCODER_RIGHT_A, INPUT_PULLUP);
@@ -97,14 +112,6 @@ void setup() {
 }
 
 void loop() {
-  // Format that is easy to parse in Python / Pygame visualizer
-  Serial.print("L:");
-  Serial.print(encoderLeft);
-  Serial.print(", R:");
-  Serial.print(encoderRight);
-  Serial.print(", TOF: ");
-  Serial.println(tof_distance_mm);
-
   //delay(40);   // ≈25 Hz – reasonable compromise between responsiveness and serial load
 
   //int distance = sensor.readRangeSingleMillimeters();
@@ -121,12 +128,30 @@ void loop() {
     static unsigned long t0 = 0;
     if (millis() - t0 >= 50) {
         t0 = millis();
+
+        // Reading gyro Z rate
+        sensors_event_t a, g, temp;
+        mpu.getEvent(&a, &g, &temp);
+        float gyro_rate_deg_s = -g.gyro.z * 57.2958f;   // since inverted sign when calibrating Punte
+
         SerialBT.print("L:");
         SerialBT.print(encoderLeft);
         SerialBT.print(", R:");
         SerialBT.print(encoderRight);
         SerialBT.print(", TOF:");
-        SerialBT.println(tof_distance_mm);
+        SerialBT.print(tof_distance_mm);
+        SerialBT.print(", GYROZ:");
+        SerialBT.println(gyro_rate_deg_s);
+
+        // printing on the terminal
+        Serial.print("L:");
+        Serial.print(encoderLeft);
+        Serial.print(", R:");
+        Serial.print(encoderRight);
+        Serial.print(", TOF:");
+        Serial.print(tof_distance_mm);
+        Serial.print(", GYROZ:");
+        Serial.println(gyro_rate_deg_s);
     }
 
     // ─── Receive motor commands ────────────────────────────

@@ -3,6 +3,7 @@ from sajilocv import *
 import threading
 import queue
 import os
+import time
 
 # instantiating the class
 visualizer = sajilopygame(wwidth=1350, wheight=750)
@@ -74,6 +75,16 @@ sensor_offset_forward = 0.055   # meters: how far TOF is in front of robot cente
 tof_filtered = 0.0  # smoothed value
 FILTER_ALPHA = 0.1 # 0.1 = very smooth, 0.4 = faster response
 
+
+#===========
+# GYROZ SETTINGS
+#===========
+gyro_rate = 0.0         # latest gyro rate from ESP32 (deg/s)
+last_gyro_time = 0.0    # for dt calculation
+FUSION_ALPHA = 0.98     # 0.98 = trust gyro a lot, 0.02 = trust encoder a little
+gyro_heading = 90.0     # integrated gyro heading(starts same as encoder) 
+
+
 while True:
     visualizer.background_color("white")
 
@@ -117,36 +128,27 @@ while True:
         try:
             line = data_from_serial.strip()  # remove \n and extra spaces
 
-            if line.startswith("L:") and ", R:" in line and ", TOF:" in line:
-                # Split on the two known separators
-                parts = line.split(", R:")
-                if len(parts) != 2:
-                    raise ValueError("Missing R: part")
+            if line.startswith("L:") and ", R:" in line and ", TOF:" in line and ", GYROZ:" in line:
+                # Split step by step on the known separators
+                l_part = line.split(", R:")[0].strip()                # "L:1"
+                r_part = line.split(", R:")[1].split(", TOF:")[0].strip()  # "426"
+                tof_part = line.split(", TOF:")[1].split(", GYROZ:")[0].strip()  # "221"
+                gyroz_part = line.split(", GYROZ:")[1].strip()        # "1.16"
 
-                left_part = parts[0].strip()                    # "L:1234"
-                rest = parts[1].strip()                         # "5678, TOF:342"
-
-                left_enc = int(left_part.replace("L:", ""))
-
-                # Now split the rest on ", TOF:"
-                right_tof = rest.split(", TOF:")
-                if len(right_tof) != 2:
-                    raise ValueError("Missing TOF part")
-
-                right_enc = int(right_tof[0].strip())           # "5678"
-                tof_str   = right_tof[1].strip()                # "342" or "-1"
+                # Parse each value safely
+                left_enc   = int(l_part.replace("L:", ""))
+                right_enc  = int(r_part.replace("R:", ""))
+                tof_raw    = int(tof_part)
+                gyro_rate  = float(gyroz_part.replace("GYROZ:", ""))
 
                 # Convert TOF safely
                 try:
-                    tof_distance = int(tof_str)
+                    tof_distance = int(tof_raw)
                 except ValueError:
                     tof_distance = -999   # error/invalid flag
 
-                # Now you have:
-                # left_enc, right_enc, tof_distance
-
-                # Optional: debug print
-                # print(f"L:{left_enc}  R:{right_enc}  TOF:{tof_distance}")
+                # Optional: debug print to console
+                #print(f"L:{left_enc}  R:{right_enc}  TOF:{tof_raw}  GYROZ:{gyro_rate}")
 
         except Exception:
             # silently ignore bad packets during runtime
@@ -194,8 +196,33 @@ while True:
 
     # update heading (convert to degrees)
     heading += delta_theta * (180.0 / math.pi)
+
+    # adding GYROZ
+    now = time.time()
+    if last_gyro_time == 0:
+        last_gyro_time = now
+        dt = 0.05 # fallback for first frame
+    else:
+        dt = now - last_gyro_time
+    last_gyro_time = now
+
+    # Integrate gyro rate
+    gyro_heading += gyro_rate * dt
+
+    # Complementary filter (fuse with encoder heading)
+    heading = FUSION_ALPHA * (heading + gyro_rate * dt) + (1 - FUSION_ALPHA) * heading
+
+    # Keep in 0–360°
     heading = heading % 360     # keeping the heading between 0 and 360 degrees
     
+    visualizer.draw_text(
+        text=f"Heading: {int(heading)}° (fused)",
+        font_size=16,
+        color=(0, 128, 0),
+        xpos=1155,
+        ypos=165
+    )
+
     # update world position
     world_x += distance * math.cos(math.radians(heading))
     world_y += distance * math.sin(math.radians(heading))

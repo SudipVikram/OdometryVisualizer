@@ -158,7 +158,6 @@ while True:
     # using Exponential Moving Average
     if tof_distance > 0:
         tof_filtered = (FILTER_ALPHA * tof_distance) + ((1 - FILTER_ALPHA) * tof_filtered)
-        print(f"Raw: {tof_distance} mm   |   Filtered: {int(tof_filtered)} mm")
     else:
         tof_filtered = 0    # invlaid reading  
     

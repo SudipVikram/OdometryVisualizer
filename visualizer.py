@@ -70,6 +70,10 @@ obstacle_points = []  # list of (world_x, world_y) in meters
 # TOF SENSOR OFFSET (tune these values)
 sensor_offset_forward = 0.055   # meters: how far TOF is in front of robot center
 
+#=========== TOF FILTER =================
+tof_filtered = 0.0  # smoothed value
+FILTER_ALPHA = 0.1 # 0.1 = very smooth, 0.4 = faster response
+
 while True:
     visualizer.background_color("white")
 
@@ -150,6 +154,13 @@ while True:
             # print("Bad packet:", data_from_serial)
             pass
 
+    #========= TOF FILTERING ========
+    # using Exponential Moving Average
+    if tof_distance > 0:
+        tof_filtered = (FILTER_ALPHA * tof_distance) + ((1 - FILTER_ALPHA) * tof_filtered)
+        print(f"Raw: {tof_distance} mm   |   Filtered: {int(tof_filtered)} mm")
+    else:
+        tof_filtered = 0    # invlaid reading  
     
     visualizer.draw_text(text="Encoder Data",font_size=16,color=(0,0,0),xpos=1155,ypos=15)
     visualizer.draw_text(text=f"Left: {left_enc}",font_size=16,color=(84,84,84),xpos=1155,ypos=35)
@@ -160,7 +171,7 @@ while True:
     #===========
     visualizer.draw_rect(color=(255, 179, 179),org=(1150,120),width=150,height=50,border_thickness=0,border_radius=10)
     visualizer.draw_text(text="TOF Data",font_size=16,color=(0,0,0),xpos=1155,ypos=125)
-    visualizer.draw_text(text=f"Distance: {tof_distance}",font_size=16,color=(84,84,84),xpos=1155,ypos=145)
+    visualizer.draw_text(text=f"Distance: {int(tof_filtered)}",font_size=16,color=(84,84,84),xpos=1155,ypos=145)
 
     #===========
     # ODOMETRY CALCULATIONS
@@ -206,12 +217,12 @@ while True:
     robot.load()
 
     # draw heading arrow
-    heading_norm = heading % 360
-    if 45 <= heading_norm < 135:
+    visualizer.draw_text(text=f"Heading: {int(heading)}",font_size=16,color=(84,84,84),xpos=1155,ypos=165)
+    if 45 <= heading < 135:
         direction = "up"
-    elif 135 <= heading_norm < 225:
+    elif 135 <= heading < 225:
         direction = "left"
-    elif 225 <= heading_norm < 315:
+    elif 225 <= heading < 315:
         direction = "down"
     else:
         direction = "right"   # includes 315–360 and 0–45
@@ -231,10 +242,10 @@ while True:
         screen_obx = 675 + int(wx * scale)
         screen_oby = 375 - int(wy * scale)  # Y flipped
 
-        visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)
+        visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)    
 
-    if 50 < tof_distance < 350:  # ignoring very close noise and far readings
-        d_m = tof_distance / 1000.0
+    if 50 < tof_filtered < 350:  # ignoring very close noise and far readings
+        d_m = tof_filtered / 1000.0
 
         # calculating the actual position of the TOF sensor in world space
         sensor_x = world_x + sensor_offset_forward * math.cos(math.radians(heading))
@@ -247,7 +258,7 @@ while True:
         # storing in world coordinates
         # checking for unique points to store them in the varibale
         # minimum distance (in meters) to consider a point "unique"
-        MIN_DIST_M = 0.03 # 3cm
+        MIN_DIST_M = 0.003 # 0.3cm
         is_unique = True
 
         if obstacle_points:

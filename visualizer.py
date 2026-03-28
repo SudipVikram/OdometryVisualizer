@@ -55,9 +55,13 @@ world_x = 0.0   # meters (right = positive)
 world_y = 0.0   # meters (forward = positive)
 heading = 90.0  # degrees (90 = facing up)
 
+# NOTE:
+# Calibrated: TICKS_PER_METER = 13000, scale = 156.5
+# Achieved good quadrant alignment after physical motor centering + dual casters
+
 # wheel constants
-TICKS_PER_METER = 9191.25
-WHEEL_BASE = 0.119  # meters (distance between left and right wheels)
+TICKS_PER_METER = 13000       # 9191.25
+WHEEL_BASE = 0.127  # meters (distance between left and right wheels)
 
 # previous encoder values
 prev_left = 0
@@ -79,11 +83,16 @@ FILTER_ALPHA = 0.1 # 0.1 = very smooth, 0.4 = faster response
 #===========
 # GYROZ SETTINGS
 #===========
-gyro_rate = 0.0         # latest gyro rate from ESP32 (deg/s)
-last_gyro_time = 0.0    # for dt calculation
-FUSION_ALPHA = 0.98     # 0.98 = trust gyro a lot, 0.02 = trust encoder a little
-gyro_heading = 90.0     # integrated gyro heading(starts same as encoder) 
+gyro_heading = 90.0
+last_gyro_time = 0.0
+FUSION_ALPHA = 0.95          # trust gyro when moving
 
+# New threshold to detect "movement"
+MOVEMENT_THRESHOLD = 5       # minimum encoder ticks change to consider "moving"
+
+
+# Caster wheel misalignment compensation
+TURN_CORRECTION_FACTOR = 0.9     # Start with 1.0, tune this value
 
 while True:
     visualizer.background_color("white")
@@ -120,7 +129,7 @@ while True:
     # ODOMETRY DATA
     #===========
     # placeholder for odometry data
-    visualizer.draw_rect(color=(74,243,255),org=(1150,10),width=150,height=100,border_thickness=0,border_radius=10)
+    visualizer.draw_rect(color=(74,243,255),org=(1150,10),width=150,height=75,border_thickness=0,border_radius=10)
 
     data_from_serial = odometry_data.receive_serial_data()
 
@@ -170,16 +179,16 @@ while True:
     #===========
     # TOF DATA
     #===========
-    visualizer.draw_rect(color=(255, 179, 179),org=(1150,120),width=150,height=50,border_thickness=0,border_radius=10)
-    visualizer.draw_text(text="TOF Data",font_size=16,color=(0,0,0),xpos=1155,ypos=125)
-    visualizer.draw_text(text=f"Distance: {int(tof_filtered)}",font_size=16,color=(84,84,84),xpos=1155,ypos=145)
+    visualizer.draw_rect(color=(255, 179, 179),org=(1150,100),width=150,height=50,border_thickness=0,border_radius=10)
+    visualizer.draw_text(text="TOF Data",font_size=16,color=(0,0,0),xpos=1155,ypos=105)
+    visualizer.draw_text(text=f"Distance: {int(tof_filtered)}",font_size=16,color=(84,84,84),xpos=1155,ypos=125)
 
     #===========
     # ODOMETRY CALCULATIONS
     #===========
     # wheel diameter = 34 milimeters = 0.034 meters
     # wheel circumference = pi * diameter = 0.034 * 3.14159 = 0.1068 meters
-    # wheel to wheel distance = 119 milimeters = 0.119 meters
+    # wheel to wheel distance = 119 milimeters = 0.119 meters # new distance = 0.127m
     # how many ticks since last update
     delta_left = left_enc - prev_left
     delta_right = right_enc - prev_right
@@ -197,31 +206,12 @@ while True:
     # update heading (convert to degrees)
     heading += delta_theta * (180.0 / math.pi)
 
-    # adding GYROZ
-    now = time.time()
-    if last_gyro_time == 0:
-        last_gyro_time = now
-        dt = 0.05 # fallback for first frame
-    else:
-        dt = now - last_gyro_time
-    last_gyro_time = now
-
-    # Integrate gyro rate
-    gyro_heading += gyro_rate * dt
-
-    # Complementary filter (fuse with encoder heading)
-    heading = FUSION_ALPHA * (heading + gyro_rate * dt) + (1 - FUSION_ALPHA) * heading
-
     # Keep in 0–360°
     heading = heading % 360     # keeping the heading between 0 and 360 degrees
     
-    visualizer.draw_text(
-        text=f"Heading: {int(heading)}° (fused)",
-        font_size=16,
-        color=(0, 128, 0),
-        xpos=1155,
-        ypos=165
-    )
+    visualizer.draw_rect(color=(179, 179, 179),org=(1150,170),width=150,height=50,border_thickness=0,border_radius=10)
+    visualizer.draw_text(text="Gyro",font_size=16,color=(0,0,0),xpos=1155,ypos=175)
+    visualizer.draw_text(text=f"Heading: {int(heading)}°",font_size=16,color=(84, 84, 84),xpos=1155,ypos=195)
 
     # update world position
     world_x += distance * math.cos(math.radians(heading))
@@ -233,7 +223,7 @@ while True:
 
     # ==================== DRAW ROBOT AT CALCULATED POSITION ====================
     # Convert world coordinates to screen pixels
-    scale = 150                     # 150 pixels = 1 meter (same as your grid)
+    scale = 156.5                     # 150 pixels = 1 meter (same as your grid)
     screen_x = 675 + int(world_x * scale)
     screen_y = 375 - int(world_y * scale)   # Y flipped because screen Y grows down
 
@@ -243,7 +233,7 @@ while True:
     robot.load()
 
     # draw heading arrow
-    visualizer.draw_text(text=f"Heading: {int(heading)}",font_size=16,color=(84,84,84),xpos=1155,ypos=165)
+    #visualizer.draw_text(text=f"Heading: {int(heading)}",font_size=16,color=(84,84,84),xpos=1155,ypos=165)
     if 45 <= heading < 135:
         direction = "up"
     elif 135 <= heading < 225:
@@ -314,16 +304,16 @@ while True:
 
     #robot_speed = 5
     if visualizer.left_pressed:
-        current_command = "LEFT"
+        current_command = "LEFT:90,90"
         #robot.update_position(xpos=robot.xpos-robot_speed,ypos=robot.ypos)
     if visualizer.right_pressed:
-        current_command = "RIGHT"
+        current_command = "RIGHT:90,90"
         #robot.update_position(xpos=robot.xpos+robot_speed,ypos=robot.ypos)
     if visualizer.up_pressed:
-        current_command = "FORWARD"
+        current_command = "FORWARD:122,110"
         #robot.update_position(xpos=robot.xpos,ypos=robot.ypos-robot_speed)
     if visualizer.down_pressed:
-        current_command = "BACKWARD"
+        current_command = "BACKWARD:128,115"
         #robot.update_position(xpos=robot.xpos,ypos=robot.ypos+robot_speed)
 
     #=============

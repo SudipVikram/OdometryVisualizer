@@ -103,6 +103,13 @@ MIN_DISTANCE_BETWEEN_POINTS = 0.03 # 3cm
 last_path_point_x = 0.0
 last_path_point_y = 0.0
 
+#===========
+# WAYPOINT FOLLOWING
+#===========
+saved_path = [] # holds loaded blue path
+is_following = False # flag that tells if the robot is in following mode
+current_target_index = 0 # which point in the path is the robot heading to
+
 while True:
     visualizer.background_color("white")
 
@@ -349,6 +356,73 @@ while True:
             json.dump(path_points, f)
         print(f"Saved {len(path_points)} path points to saved_trail.json")
 
+
+    #=============
+    # WAYPOINT FOLLOWING
+    if visualizer.b_key_pressed:
+        try:
+            import json
+            with open("saved_trail.json", "r") as f:
+                saved_path = json.load(f)
+                print(f"Loaded {len(saved_path)} path points from saved_trail.json")
+
+            is_following = True
+            current_target_index = 0
+        except:
+            print("Could not load saved_trail.json")
+
+    # drawing the path
+    # Draw the loaded reference path in BLUE
+    if saved_path:
+        for i in range(1, len(saved_path)):
+            x1 = 675 + int(saved_path[i-1][0] * scale)
+            y1 = 375 - int(saved_path[i-1][1] * scale)
+            x2 = 675 + int(saved_path[i][0] * scale)
+            y2 = 375 - int(saved_path[i][1] * scale)
+            visualizer.draw_line((x1, y1), (x2, y2), color=(0, 100, 255), width=5)
+
+    #====== Path Following Logic ======
+    if is_following and saved_path:
+        target_x, target_y = saved_path[current_target_index]
+
+        # vector from robot to target
+        dx = target_x - world_x
+        dy = target_y - world_y
+
+        # distance to target
+        distance_to_target = math.hypot(dx, dy)
+
+        # desired heading to face the target
+        desired_heading = math.degrees(math.atan2(dy,dx))
+
+        # heading error
+        error = (desired_heading - heading + 180) % 360 - 180   # shortest angle
+
+        # simple proportional controller for turning
+        turn_strength = error * 1.2   # tune this gain (1.0 ~ 2.0)
+        
+        # base speed
+        base_speed = 110
+
+        # Calculate left and right PWM
+        left_pwm  = int(base_speed - turn_strength)
+        right_pwm = int(base_speed + turn_strength)
+        
+        # Clamp to valid PWM range
+        left_pwm = max(0, min(255, left_pwm))
+        right_pwm = max(0, min(255, right_pwm))
+
+        # Send command to robot
+        command = f"FORWARD:{left_pwm},{right_pwm}\n"
+        odometry_data.send_serial_data_unobstructed(command.encode("ascii"))
+
+        # Check if we reached the current target
+        if distance_to_target < 0.08:        # within 8 cm
+            current_target_index += 1
+            if current_target_index >= len(saved_path):
+                is_following = False
+                print("Path following completed!")
+                odometry_data.send_serial_data_unobstructed(b"STOP\n")
 
     #=============
     # sending command to punte

@@ -35,6 +35,11 @@ class sajilopygame:
         self.up_pressed = False
         self.down_pressed = False
         self.trigger_pressed = False
+        # adding more key presses in the library
+        self.s_key_pressed = False
+        self.c_key_pressed = False
+        self.b_key_pressed = False
+        self.enter_key_pressed = False
 
         # Mappings
         self.is_lr_mapped_to_player = False
@@ -122,6 +127,15 @@ class sajilopygame:
                     self.down_pressed = True
                 if event.key == pygame.K_SPACE:
                     self.trigger_pressed = True
+                # adding new key presses in the library
+                if event.key == pygame.K_s:
+                    self.s_key_pressed = True
+                if event.key == pygame.K_c:
+                    self.c_key_pressed = True
+                if event.key == pygame.K_b:
+                    self.b_key_pressed = True
+                if event.key == pygame.K_RETURN:
+                    self.enter_key_pressed = True
 
             # Upon key release
             if event.type == pygame.KEYUP:
@@ -135,6 +149,15 @@ class sajilopygame:
                     self.down_pressed = False
                 if event.key == pygame.K_SPACE:
                     self.trigger_pressed = False
+                # adding new key presses in the library
+                if event.key == pygame.K_s:
+                    self.s_key_pressed = False
+                if event.key == pygame.K_c:
+                    self.c_key_pressed = False
+                if event.key == pygame.K_b:
+                    self.b_key_pressed = False
+                if event.key == pygame.K_RETURN:
+                    self.enter_key_pressed = False
 
         # Update player position based on the key press state
         if self.is_lr_mapped_to_player:

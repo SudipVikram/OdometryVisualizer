@@ -94,6 +94,15 @@ MOVEMENT_THRESHOLD = 5       # minimum encoder ticks change to consider "moving"
 # Caster wheel misalignment compensation
 TURN_CORRECTION_FACTOR = 0.9     # Start with 1.0, tune this value
 
+
+#===========
+# PATH TRACKING
+#===========
+path_points = []    # list of (world_x, world_y) in meters
+MIN_DISTANCE_BETWEEN_POINTS = 0.03 # 3cm
+last_path_point_x = 0.0
+last_path_point_y = 0.0
+
 while True:
     visualizer.background_color("white")
 
@@ -221,6 +230,14 @@ while True:
     prev_left = left_enc
     prev_right = right_enc
 
+    # ===================== PATH RECORDING =====================
+    # record points only if the robot has moved enough
+    if math.hypot(world_x - last_path_point_x, world_y - last_path_point_y) >= MIN_DISTANCE_BETWEEN_POINTS:
+        path_points.append((world_x, world_y))
+        last_path_point_x = world_x
+        last_path_point_y = world_y
+
+
     # ==================== DRAW ROBOT AT CALCULATED POSITION ====================
     # Convert world coordinates to screen pixels
     scale = 156.5                     # 150 pixels = 1 meter (same as your grid)
@@ -247,8 +264,17 @@ while True:
     if direction in arrows:
         img = arrows[direction]
         rect = img.get_rect(center=(screen_x, screen_y))
-        visualizer.screen.blit(img, rect)
+        visualizer.screen.blit(img, rect)  
 
+    # Draw the recorded path trail
+    if len(path_points) > 1:
+        for i in range(1, len(path_points)):
+            x1 = 675 + int(path_points[i-1][0] * scale)
+            y1 = 375 - int(path_points[i-1][1] * scale)
+            x2 = 675 + int(path_points[i][0] * scale)
+            y2 = 375 - int(path_points[i][1] * scale)
+            
+            visualizer.draw_line((x1, y1), (x2, y2), color=(0, 100, 255), width=4)
 
     #============
     # MAPPING
@@ -258,7 +284,8 @@ while True:
         screen_obx = 675 + int(wx * scale)
         screen_oby = 375 - int(wy * scale)  # Y flipped
 
-        visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)    
+        # will work on the obstacles later
+        #visualizer.draw_rect(color=(255,0,0),org=(screen_obx-5,screen_oby-5),width=2,height=2,border_thickness=0,border_radius=0)    
 
     if 50 < tof_filtered < 350:  # ignoring very close noise and far readings
         d_m = tof_filtered / 1000.0
@@ -295,7 +322,7 @@ while True:
         last_wx, last_wy = obstacle_points[-1]
         last_screen_x = 675 + int(last_wx * scale)
         last_screen_y = 375 - int(last_wy * scale)
-        visualizer.draw_rect(color=(255,255,0), org=(last_screen_x-6, last_screen_y-6), width=12, height=12, border_radius=6)
+        #visualizer.draw_rect(color=(255,255,0), org=(last_screen_x-6, last_screen_y-6), width=12, height=12, border_radius=6)
 
     #============
     # KEY STROKES
@@ -315,6 +342,13 @@ while True:
     if visualizer.down_pressed:
         current_command = "BACKWARD:128,115"
         #robot.update_position(xpos=robot.xpos,ypos=robot.ypos+robot_speed)
+    # to save the trail press 'space'
+    if visualizer.s_key_pressed:
+        import json
+        with open("saved_trail.json", "w") as f:
+            json.dump(path_points, f)
+        print(f"Saved {len(path_points)} path points to saved_trail.json")
+
 
     #=============
     # sending command to punte

@@ -402,7 +402,7 @@ while True:
         turn_strength = error * 1.2   # tune this gain (1.0 ~ 2.0)
         
         # base speed
-        base_speed = 110
+        base_speed = 180
 
         # Calculate left and right PWM
         left_pwm  = int(base_speed - turn_strength)
@@ -423,6 +423,28 @@ while True:
                 is_following = False
                 print("Path following completed!")
                 odometry_data.send_serial_data_unobstructed(b"STOP\n")
+
+    # ==================== DRAW GREEN LIVE TRAIL ====================
+    # This draws the robot's actual movement in real-time (green color)
+
+    if len(path_points) > 1:
+        for i in range(1, len(path_points)):
+            # Convert world coordinates to screen pixels
+            x1 = 675 + int(path_points[i-1][0] * scale)
+            y1 = 375 - int(path_points[i-1][1] * scale)
+            
+            x2 = 675 + int(path_points[i][0] * scale)
+            y2 = 375 - int(path_points[i][1] * scale)
+            
+            # Draw green line for the live trail
+            visualizer.draw_line((x1, y1), (x2, y2), color=(0, 255, 100), width=5)
+
+    # ==================== RECORD PATH POINTS ====================
+    # Record a new point only if the robot has moved enough distance
+    if math.hypot(world_x - last_path_point_x, world_y - last_path_point_y) > MIN_DISTANCE_BETWEEN_POINTS:
+        path_points.append((world_x, world_y))
+        last_path_point_x = world_x
+        last_path_point_y = world_y
 
     #=============
     # sending command to punte
